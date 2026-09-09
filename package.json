@@ -34,6 +34,9 @@
     },
     "homepage": "https://docs.windy-plugins.com/",
     "dependencies": {
-        "@windycom/plugin-devtools": "^3.0.3"
+        "highcharts": "^13.0.2",
+        "@highcharts/svelte": "^1.1.1",
+        "@windycom/plugin-devtools": "^3.0.3",
+        "openmeteo": "^1.2.3"
     }
 }
