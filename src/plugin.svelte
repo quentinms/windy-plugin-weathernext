@@ -7,14 +7,34 @@
         on:click={() => bcast.emit('rqstOpen', 'menu')}
     >
         {title}
+        {#if reverseName && location}
+            {@const { lat, lon } = location}
+            <div class="plugin__title__subtitle">
+                {reverseName} at {normalizeLatLon(lat)}, {normalizeLatLon(lon)}
+            </div>
+        {/if}
     </div>
     <Chart {options} highcharts={Highcharts} />
 </section>
 
 <script lang="ts">
+    import bcast from '@windy/broadcast';
+    import { onDestroy, onMount } from 'svelte';
+    import { isValidLatLonObj, normalizeLatLon } from '@windy/utils';
+    import { map } from '@windy/map';
+    import * as reverse from '@windy/reverseName';
+    import type { LatLon } from '@windy/interfaces.d';
+    import { singleclick } from '@windy/singleclick';
+    import { getMyLatestPos } from '@windy/geolocation';
+
+    import config from './pluginConfig';
+
     import Highcharts from 'highcharts';
     import 'highcharts/modules/exporting';
-    import { Chart } from '@highcharts/svelte'; // Chart is also exported by default
+    import { Chart } from '@highcharts/svelte';
+
+    let location: LatLon | null = null;
+    let reverseName: string | null = null;
 
     let options = {
         chart: {
@@ -23,87 +43,50 @@
         title: {
             text: 'Weather Forecast',
         },
+        accessibility: {
+            enabled: true,
+        },
     };
-
-    import bcast from '@windy/broadcast';
-    import { onDestroy, onMount } from 'svelte';
-
-    import config from './pluginConfig';
 
     const { title } = config;
 
-    import { fetchWeatherApi } from 'openmeteo';
-
-    import { Variable } from '@openmeteo/sdk/variable';
-
-    const params = {
-        latitude: 34.928,
-        longitude: -9.4,
-        hourly: 'temperature_2m',
-        forecast_days: 7,
-        models: 'google_weathernext2_ensemble_mean',
-    };
-    const url = 'https://ensemble-api.open-meteo.com/v1/ensemble';
-    const responses = fetchWeatherApi(url, params);
-
-    responses.then(res => {
-        // Process first location. Add a for-loop for multiple locations or weather models
-        const response = res[0];
-        console.log('QMS', response);
-
-        // Attributes for timezone and location
-        const latitude = response.latitude();
-        const longitude = response.longitude();
-        const elevation = response.elevation();
-        const utcOffsetSeconds = response.utcOffsetSeconds();
-
-        console.log(
-            'QMS',
-            `\nCoordinates: ${latitude}°N ${longitude}°E`,
-            `\nElevation: ${elevation}m asl`,
-            `\nTimezone difference to GMT+0: ${utcOffsetSeconds}s`,
-            `\nTimezone: ${response.timezone()}`,
-            `\nTimezone (short): ${response.timezoneAbbreviation()}`,
-            `\nID: ${response.locationId()}`,
-        );
-
-        const hourly = response.hourly()!;
-        const hourlyVariables = Array.from({ length: hourly.variablesLength() }, (_, i) =>
-            hourly.variables(i),
-        );
-        const hourlyTemperature2m = hourlyVariables.filter(
-            v => v?.variable() === Variable.temperature && v?.altitude() === 2,
-        );
-
-        // Note: The order of weather variables in the URL query and the indices below need to match!
-        const weatherData = {
-            hourly: {
-                time: Array.from(
-                    {
-                        length:
-                            (Number(hourly.timeEnd()) - Number(hourly.time())) / hourly.interval(),
-                    },
-                    (_, i) =>
-                        new Date(
-                            (Number(hourly.time()) + i * hourly.interval() + utcOffsetSeconds) *
-                                1000,
-                        ),
-                ),
-            },
+    function loadForecastAndUpdateChart(location: LatLon) {
+        const params = {
+            latitude: location.lat,
+            longitude: location.lon,
+            hourly: 'temperature_2m',
+            forecast_days: 7,
+            models: 'google_weathernext2_ensemble_mean',
         };
+        const url = `https://ensemble-api.open-meteo.com/v1/ensemble?latitude=${params.latitude}&longitude=${params.longitude}&hourly=${params.hourly}&timezone=auto&forecast_days=${params.forecast_days}&models=${params.models}`;
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(res => {
+                // Process first location. Add a for-loop for multiple locations or weather models
+                const response = res;
+                console.log('QMS', JSON.stringify(response));
 
-        // Process all members
-        for (const variable of hourlyTemperature2m) {
-            const member = variable?.ensembleMember();
-            weatherData.hourly[`temperature_2m_member${member}`] = variable!.valuesArray()!;
-        }
+                const weatherData = {
+                    hourly: {
+                        time: response.hourly.time,
+                        temperature_2m: response.hourly.temperature_2m,
+                    },
+                };
 
-        // The 'weatherData' object now contains a simple structure, with arrays of datetimes and weather information
-        console.log('QMS\nHourly data:\n', weatherData.hourly);
-        updateChart(weatherData.hourly.time, weatherData.hourly['temperature_2m_member0']);
-    });
+                updateChart(
+                    weatherData.hourly.time,
+                    weatherData.hourly.temperature_2m,
+                    response.hourly_units.temperature_2m,
+                );
+            });
+    }
 
-    function updateChart(time: Array<Date>, values: Float32Array) {
+    function updateChart(time: Array<Date>, values: Float32Array, unit: string) {
         options = {
             ...options,
             xAxis: {
@@ -111,29 +94,38 @@
                 title: { text: 'Date' },
             },
             yAxis: {
-                title: { text: 'ºC' },
+                title: { text: `${unit}` },
             },
             series: [
                 {
                     name: 'temperature_2m',
-                    data: Array.from(values).map((value, index) => [time[index].getTime(), value]),
+                    data: Array.from(values).map((value, index) => [time[index], value]),
                 },
             ],
         };
     }
 
-    export const onopen = (_params: unknown) => {
+    // If plugin is opened from RH menu, it is called with location
+    // if not, the location param is undefined
+    export const onopen = (loc?: LatLon) => {
         // Your plugin was opened with parameters parsed from URL
         // or with LatLon object if opened from contextmenu
+        if (isValidLatLonObj(loc)) {
+            location = loc;
+        } else {
+            location = getMyLatestPos();
+        }
+        const zoom = Math.max(8, map.getZoom());
+        map.setView([location.lat, location.lon], zoom, { animate: true });
+        reverse.get(location).then(({ name }) => {
+            reverseName = name;
+        });
+        loadForecastAndUpdateChart(location);
     };
 
-    onMount(() => {
-        // Your plugin was mounted
-    });
+    onMount(() => {});
 
-    onDestroy(() => {
-        // Your plugin was destroyed
-    });
+    onDestroy(() => {});
 </script>
 
 <style lang="less">
