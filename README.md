@@ -1,3 +1,13 @@
+# Windy Plugin for WeatherNext
+
+Display [Google's WeatherNext](https://developers.google.com/weathernext) forecast in a panel on windy.com
+
+It fetches the forecast via an [open-meteo.com](https://open-meteo.com/en/docs/google-weathernext-api?timezone=auto&models=google_weathernext2_ensemble_mean) API call.
+
+The result is displayed with a https://www.highcharts.com/ chart.
+
+----
+
 # Windy Plugin Template
 
 Template for development of Windy Plugins.
