@@ -18,13 +18,13 @@
 </section>
 
 <script lang="ts">
-    import bcast from '@windy/broadcast';
     import { onDestroy, onMount } from 'svelte';
+
+    import bcast from '@windy/broadcast';
     import { isValidLatLonObj, normalizeLatLon } from '@windy/utils';
     import { map } from '@windy/map';
     import * as reverse from '@windy/reverseName';
     import type { LatLon } from '@windy/interfaces.d';
-    import { singleclick } from '@windy/singleclick';
     import { getMyLatestPos } from '@windy/geolocation';
 
     import config from './pluginConfig';
@@ -67,9 +67,7 @@
         })
             .then(response => response.json())
             .then(res => {
-                // Process first location. Add a for-loop for multiple locations or weather models
                 const response = res;
-                console.log('QMS', JSON.stringify(response));
 
                 const weatherData = {
                     hourly: {
@@ -86,19 +84,20 @@
             });
     }
 
-    function updateChart(time: Array<Date>, values: Float32Array, unit: string) {
+    function updateChart(time: Array<Date>, values: Array<number>, unit: string) {
         options = {
             ...options,
             xAxis: {
                 type: 'datetime',
                 title: { text: 'Date' },
+                tickInterval: 24 * 3600 * 1000, // one day
             },
             yAxis: {
                 title: { text: `${unit}` },
             },
             series: [
                 {
-                    name: 'temperature_2m',
+                    name: 'temperature',
                     data: Array.from(values).map((value, index) => [time[index], value]),
                 },
             ],
@@ -115,8 +114,6 @@
         } else {
             location = getMyLatestPos();
         }
-        const zoom = Math.max(8, map.getZoom());
-        map.setView([location.lat, location.lon], zoom, { animate: true });
         reverse.get(location).then(({ name }) => {
             reverseName = name;
         });

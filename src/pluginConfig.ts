@@ -9,6 +9,7 @@ const config: ExternalPluginConfig = {
     author: 'Quentin Mazars-Simon',
     repository: 'https://github.com/quentinms/windy-plugin-weathernext',
     desktopUI: 'rhpane',
+    desktopWidth: 600,
     mobileUI: 'fullscreen',
     routerPath: '/weathernext/:lat?/:lon?',
     addToContextmenu: true,
