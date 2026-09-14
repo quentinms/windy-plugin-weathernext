@@ -26,8 +26,9 @@
     },
     "homepage": "https://docs.windy-plugins.com/",
     "dependencies": {
-        "highcharts": "^13.0.2",
         "@highcharts/svelte": "^1.1.1",
-        "@windycom/plugin-devtools": "^3.0.3"
+        "@windycom/plugin-devtools": "^3.0.3",
+        "d3-array": "^3.2.4",
+        "highcharts": "^13.0.2"
     }
 }
