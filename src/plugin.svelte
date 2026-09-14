@@ -15,6 +15,16 @@
         {/if}
     </div>
     <Chart {options} highcharts={Highcharts} />
+    {#if location}
+        {@const { lat, lon } = location}
+        <a
+            href={`https://deepmind.google.com/science/weatherlab?zoom=6&center=${lat},${lon}&panel=point-forecast&location=${lat},${lon}`}
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            > View on Google Weatherlab
+        </a>
+    {/if}
 </section>
 
 <script lang="ts">
