@@ -32,7 +32,6 @@
 
     import bcast from '@windy/broadcast';
     import { isValidLatLonObj, normalizeLatLon } from '@windy/utils';
-    import { map } from '@windy/map';
     import * as reverse from '@windy/reverseName';
     import type { LatLon } from '@windy/interfaces.d';
     import { getMyLatestPos } from '@windy/geolocation';
@@ -40,7 +39,6 @@
     import config from './pluginConfig';
 
     import Highcharts from 'highcharts';
-    import 'highcharts/modules/exporting';
     import { Chart } from '@highcharts/svelte';
 
     import { quantile } from 'd3-array';
