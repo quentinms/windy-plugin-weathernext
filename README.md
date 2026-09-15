@@ -4,7 +4,7 @@ Display [Google's WeatherNext](https://developers.google.com/weathernext) foreca
 
 It fetches the forecast via an [open-meteo.com](https://open-meteo.com/en/docs/google-weathernext-api?timezone=auto&models=google_weathernext2_ensemble_mean) API call.
 
-The result is displayed with a https://www.highcharts.com/ chart.
+The result is displayed with a [d3.js](https://d3js.org/) chart.
 
 ----
 
