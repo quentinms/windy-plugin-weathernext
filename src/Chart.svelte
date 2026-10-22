@@ -1,5 +1,8 @@
 <div class="mt-15">
-    <svg bind:this={svgEl}></svg>
+    <div class="chart">
+        <svg bind:this={svgEl}></svg>
+        <div class="tooltip" bind:this={tooltipEl}></div>
+    </div>
 </div>
 
 <script lang="ts">
@@ -16,6 +19,7 @@
     export let unit = '';
 
     let svgEl: SVGSVGElement;
+    let tooltipEl: HTMLDivElement;
 
     $: {
         if (data && svgEl) {
@@ -149,6 +153,82 @@
                 .attr('fill', 'white')
                 .text(unit);
         }
+
+        // Tooltip: vertical guide line, dot on the mean line, invisible overlay
+        const guideLine = innerSvg
+            .append('line')
+            .attr('y1', 0)
+            .attr('y2', height)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '3,3')
+            .attr('opacity', 0);
+
+        const dot = innerSvg
+            .append('circle')
+            .attr('r', 4)
+            .attr('fill', 'lightblue')
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1.5)
+            .attr('opacity', 0);
+
+        const tooltip = d3.select(tooltipEl);
+        const dateLabelFormat = d3.timeFormat('%a %d %b %H:%M');
+        const formatTemp = (v: number) => `${v.toFixed(1)} ${unit}`;
+        const bisectTime = d3.bisector((t: number) => t).left;
+
+        const onMove = (event: PointerEvent) => {
+            const [mx] = d3.pointer(event, innerSvg.node());
+            const time = xScale.invert(mx).getTime();
+
+            // Nearest data point to the cursor's x position
+            let i = bisectTime(timestamps, time);
+            if (i >= timestamps.length) i = timestamps.length - 1;
+            if (i > 0 && Math.abs(timestamps[i - 1] - time) <= Math.abs(timestamps[i] - time)) {
+                i -= 1;
+            }
+
+            const px = xScale(new Date(timestamps[i]));
+            const mean = chartData.temperature_mean[i];
+            const p10 = chartData.temperature_p10[i];
+            const p90 = chartData.temperature_p90[i];
+
+            guideLine.attr('x1', px).attr('x2', px).attr('opacity', 0.6);
+            dot.attr('cx', px).attr('cy', yScale(mean)).attr('opacity', 1);
+
+            tooltip
+                .style('opacity', 1)
+                .html(
+                    `<div class="tooltip-date">${dateLabelFormat(new Date(timestamps[i]))}</div>` +
+                        `<div class="tooltip-row"><span>Mean</span> <span>${formatTemp(mean)}</span></div>` +
+                        `<div class="tooltip-row"><span>P10</span> <span>${formatTemp(p10)}</span></div>` +
+                        `<div class="tooltip-row"><span>P90</span> <span>${formatTemp(p90)}</span></div>`,
+                );
+
+            // Position next to the cursor, flipping to the left near the right edge
+            const [cx, cy] = d3.pointer(event, tooltipEl.parentElement!);
+            const offset = 14;
+            const left =
+                cx + offset + tooltipEl.offsetWidth > tooltipEl.parentElement!.clientWidth
+                    ? cx - offset - tooltipEl.offsetWidth
+                    : cx + offset;
+            tooltip.style('left', `${left}px`).style('top', `${cy - tooltipEl.offsetHeight / 2}px`);
+        };
+
+        const onLeave = () => {
+            guideLine.attr('opacity', 0);
+            dot.attr('opacity', 0);
+            tooltip.style('opacity', 0);
+        };
+
+        innerSvg
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .attr('fill', 'transparent')
+            .style('cursor', 'crosshair')
+            .on('pointermove', onMove)
+            .on('pointerleave', onLeave);
     };
 </script>
 
@@ -156,5 +236,37 @@
     svg {
         width: 100%;
         height: 200px;
+    }
+    .chart {
+        position: relative;
+    }
+
+    .tooltip {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        pointer-events: none;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: white;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+
+        .tooltip-date {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
     }
 </style>
