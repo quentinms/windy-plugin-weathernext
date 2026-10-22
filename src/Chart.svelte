@@ -107,6 +107,21 @@
             .x((_, i) => xScale(new Date(timestamps[i])))
             .y(value => yScale(value));
 
+        const band = d3
+            .area<number>()
+            .x((_, i) => xScale(new Date(timestamps[i])))
+            .y0((_, i) => yScale(chartData.temperature_p90[i]))
+            .y1((_, i) => yScale(chartData.temperature_p10[i]));
+
+        // Shaded band between p10 and p90 (drawn first so the lines are on top)
+        innerSvg
+            .append('path')
+            .datum(timestamps)
+            .attr('fill', 'lightblue')
+            .attr('fill-opacity', 0.2)
+            .attr('stroke', 'none')
+            .attr('d', band);
+
         // Draw the p10 and p90 lines (drawn first so the mean line is on top)
         [chartData.temperature_p10, chartData.temperature_p90].forEach(values => {
             innerSvg
@@ -114,7 +129,7 @@
                 .datum(values)
                 .attr('fill', 'none')
                 .attr('stroke', 'white')
-                .attr('stroke-width', 2)
+                .attr('stroke-width', 1)
                 .attr('stroke-opacity', 0.5)
                 .attr('d', line);
         });

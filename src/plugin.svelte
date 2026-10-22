@@ -81,8 +81,8 @@
                         time: response.hourly.time,
                         temperature_mean:
                             response.hourly.temperature_2m_google_weathernext2_ensemble_mean,
-                        temperature_p10: [],
-                        temperature_p90: [],
+                        temperature_p10: response.hourly.temperature_2m_google_weathernext2_ensemble_mean, // placeholders
+                        temperature_p90: response.hourly.temperature_2m_google_weathernext2_ensemble_mean, // placeholders
                     },
                     units: {
                         temperature:

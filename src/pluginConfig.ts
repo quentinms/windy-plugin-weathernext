@@ -2,7 +2,7 @@ import type { ExternalPluginConfig } from '@windy/interfaces';
 
 const config: ExternalPluginConfig = {
     name: 'windy-plugin-weathernext',
-    version: '0.0.3',
+    version: '0.0.4',
     icon: '🤖',
     title: 'Google WeatherNext Forecast',
     description: 'Google WeatherNext Forecast plugin for Windy.com',
