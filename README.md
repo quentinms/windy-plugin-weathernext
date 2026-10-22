@@ -6,6 +6,8 @@ It fetches the forecast via an [open-meteo.com](https://open-meteo.com/en/docs/g
 
 The result is displayed with a [d3.js](https://d3js.org/) chart.
 
+![screenshot](./src/screenshot.jpg)
+
 ----
 
 # Windy Plugin Template
