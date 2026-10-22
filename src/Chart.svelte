@@ -86,19 +86,17 @@
         }
 
         // Draw a vertical dashed line for each midnight
-        days
-            .filter(d => d.getTime() > firstTimestamp && d.getTime() < lastTimestamp)
-            .forEach(d => {
-                innerSvg
-                    .append('line')
-                    .attr('x1', xScale(d))
-                    .attr('y1', 0)
-                    .attr('x2', xScale(d))
-                    .attr('y2', height + 5)
-                    .attr('stroke', 'lightgray')
-                    .attr('stroke-width', 1)
-                    .attr('stroke-dasharray', '5,5');
-            });
+        days.filter(d => d.getTime() > firstTimestamp && d.getTime() < lastTimestamp).forEach(d => {
+            innerSvg
+                .append('line')
+                .attr('x1', xScale(d))
+                .attr('y1', 0)
+                .attr('x2', xScale(d))
+                .attr('y2', height + 5)
+                .attr('stroke', 'lightgray')
+                .attr('stroke-width', 1)
+                .attr('stroke-dasharray', '5,5');
+        });
 
         const line = d3
             .line<number>()
@@ -111,9 +109,9 @@
                 .append('path')
                 .datum(values)
                 .attr('fill', 'none')
-                .attr('stroke', 'black')
+                .attr('stroke', 'white')
                 .attr('stroke-width', 2)
-                .attr('stroke-opacity', 0.2)
+                .attr('stroke-opacity', 0.5)
                 .attr('d', line);
         });
 
@@ -122,15 +120,12 @@
             .append('path')
             .datum(chartData.temperature_mean)
             .attr('fill', 'none')
-            .attr('stroke', 'orange')
+            .attr('stroke', 'lightblue')
             .attr('stroke-width', 3)
             .attr('d', line);
 
         // X axis
-        const xAxis = d3
-            .axisBottom(xScale)
-            .tickValues(days)
-            .tickFormat(d3.timeFormat('%a %d'));
+        const xAxis = d3.axisBottom(xScale).tickValues(days).tickFormat(d3.timeFormat('%a %d'));
 
         innerSvg
             .append('g')
