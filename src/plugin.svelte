@@ -14,7 +14,7 @@
             </div>
         {/if}
     </div>
-    <Chart {options} highcharts={Highcharts} />
+    <Chart data={chartData} unit={unit} />
     {#if location}
         {@const { lat, lon } = location}
         <a
@@ -32,33 +32,28 @@
 
     import bcast from '@windy/broadcast';
     import { isValidLatLonObj, normalizeLatLon } from '@windy/utils';
-    import { map } from '@windy/map';
     import * as reverse from '@windy/reverseName';
     import type { LatLon } from '@windy/interfaces.d';
     import { getMyLatestPos } from '@windy/geolocation';
 
     import config from './pluginConfig';
 
-    import Highcharts from 'highcharts';
-    import 'highcharts/modules/exporting';
-    import { Chart } from '@highcharts/svelte';
+    import Chart from './Chart.svelte';
 
-    import { quantile } from 'd3-array';
+    import { quantile } from 'd3';
 
     let location: LatLon | null = null;
     let reverseName: string | null = null;
 
-    let options = {
-        chart: {
-            type: 'line',
-        },
-        title: {
-            text: 'Weather Forecast',
-        },
-        accessibility: {
-            enabled: true,
-        },
+    type WeatherChartData = {
+        time: Array<string>;
+        temperature_mean: Array<number>;
+        temperature_p10: Array<number>;
+        temperature_p90: Array<number>;
     };
+
+    let chartData: WeatherChartData | null = null;
+    let unit = '';
 
     const { title } = config;
 
@@ -86,8 +81,8 @@
                         time: response.hourly.time,
                         temperature_mean:
                             response.hourly.temperature_2m_google_weathernext2_ensemble_mean,
-                        temperature_p10: [],
-                        temperature_p90: [],
+                        temperature_p10: response.hourly.temperature_2m_google_weathernext2_ensemble_mean, // placeholders
+                        temperature_p90: response.hourly.temperature_2m_google_weathernext2_ensemble_mean, // placeholders
                     },
                     units: {
                         temperature:
@@ -109,44 +104,13 @@
     }
 
     function updateChart(weatherData) {
-        options = {
-            ...options,
-            xAxis: {
-                type: 'datetime',
-                title: { text: 'Date' },
-                tickInterval: 24 * 3600 * 1000, // one day
-            },
-            yAxis: {
-                title: { text: `${weatherData.units.temperature}` },
-            },
-            series: [
-                {
-                    name: 'temperature mean',
-                    data: Array.from(weatherData.hourly.temperature_mean).map((value, index) => [
-                        weatherData.hourly.time[index],
-                        value,
-                    ]),
-                },
-                {
-                    name: 'temperature p10',
-                    data: Array.from(weatherData.hourly.temperature_p10).map((value, index) => [
-                        weatherData.hourly.time[index],
-                        value,
-                    ]),
-                    opacity: 0.2,
-                    color: 'black',
-                },
-                {
-                    name: 'temperature p90',
-                    data: Array.from(weatherData.hourly.temperature_p90).map((value, index) => [
-                        weatherData.hourly.time[index],
-                        value,
-                    ]),
-                    opacity: 0.2,
-                    color: 'black',
-                },
-            ],
+        chartData = {
+            time: weatherData.hourly.time,
+            temperature_mean: weatherData.hourly.temperature_mean,
+            temperature_p10: weatherData.hourly.temperature_p10,
+            temperature_p90: weatherData.hourly.temperature_p90,
         };
+        unit = weatherData.units.temperature;
     }
 
     // For each ensemble series, compute the p10 and p90 at a given time step,

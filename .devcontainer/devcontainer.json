@@ -1,3 +1,6 @@
 {
-    "image": "mcr.microsoft.com/devcontainers/typescript-node"
+    "image": "mcr.microsoft.com/devcontainers/typescript-node",
+    "forwardPorts": [
+        9999
+    ]
 }
